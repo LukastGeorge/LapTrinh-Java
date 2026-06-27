@@ -1,6 +1,8 @@
-# Lab 2 - Spring Core DI
+# Lap Trinh Java
 
-Repo nay hoan thanh cac phan trong file `Ch2_Lab_Spring_Core_DI.pdf`:
+Repo tong de nop cac bai lab mon Lap trinh Java.
+
+Hien tai repo co 3 project Maven rieng tu file `Ch2_Lab_Spring_Core_DI.pdf`:
 
 - Lab 1: Tao bean, constructor injection, interface abstraction, `@Qualifier`.
 - Lab 2: Bean lifecycle, `@PostConstruct`, `@PreDestroy`, singleton va prototype.
@@ -22,25 +24,25 @@ mvn clean package
 Chay Lab 1:
 
 ```powershell
-mvn exec:java "-Dexec.mainClass=com.lab.Main"
+mvn -pl Lab-1 exec:java "-Dexec.mainClass=com.lab.Main"
 ```
 
 Chay Lab 2:
 
 ```powershell
-mvn exec:java "-Dexec.mainClass=com.lab.lifecycle.Main"
+mvn -pl Lab-2 exec:java "-Dexec.mainClass=com.lab.lifecycle.Main"
 ```
 
 Chay Lab 3 voi profile mac dinh `dev`:
 
 ```powershell
-mvn spring-boot:run
+mvn -pl Lab-3 spring-boot:run
 ```
 
 Chay Lab 3 voi profile `prod`:
 
 ```powershell
-mvn spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=prod"
+mvn -pl Lab-3 spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=prod"
 ```
 
 ## Cau hoi on tap
