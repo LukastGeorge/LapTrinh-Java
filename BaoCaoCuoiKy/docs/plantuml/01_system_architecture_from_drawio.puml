@@ -1,0 +1,125 @@
+﻿@startuml
+skinparam componentStyle uml2
+skinparam backgroundColor #FFFFFF
+skinparam packageBackgroundColor white
+
+title SÆ  Äá»’ KIáº¾N TRÃšC & Táº¤T Cáº¢ CHá»¨C NÄ‚NG Há»† THá»NG QUáº¢N LÃ Äáº¶T Lá»ŠCH KHÃM Bá»†NH
+
+' 1. CLIENT LAYER
+package "1. CLIENT LAYER (Giao diá»‡n ngÆ°á»i dÃ¹ng)" #E1F5FE {
+  package "PhÃ¢n há»‡ Bá»‡nh nhÃ¢n (Patient)" #B3E5FC {
+    [ÄÄƒng kÃ½ / ÄÄƒng nháº­p & Auth] as AuthUI
+    [Xem & Cáº­p nháº­t Há»“ sÆ¡/Bá»‡nh Ã¡n] as ProfileUI
+    [Tra cá»©u, Lá»c & TÃ¬m BÃ¡c sÄ©] as SearchDocUI
+    [Äáº·t lá»‹ch khÃ¡m & Äiá»n triá»‡u chá»©ng] as BookingUI
+    [Xem lá»‹ch sá»­ & Há»§y lá»‹ch háº¹n] as CancelUI
+  }
+
+  package "PhÃ¢n há»‡ BÃ¡c sÄ© (Doctor)" #E1BEE7 {
+    [ÄÄƒng kÃ½ / Quáº£n lÃ½ Ca lÃ m viá»‡c (Schedules)] as DoctorScheduleUI
+    [Xem danh sÃ¡ch Bá»‡nh nhÃ¢n Ä‘áº·t khÃ¡m] as DoctorApptUI
+    [Cáº­p nháº­t tráº¡ng thÃ¡i ca khÃ¡m & Cháº©n Ä‘oÃ¡n] as DoctorNoteUI
+  }
+
+  package "PhÃ¢n há»‡ Quáº£n trá»‹ viÃªn (Admin)" #FFCDD2 {
+    [Quáº£n lÃ½ BÃ¡c sÄ© & Bá»‡nh nhÃ¢n (CRUD)] as AdminUserUI
+    [Quáº£n lÃ½ ChuyÃªn khoa & Dá»‹ch vá»¥ (Master Data)] as AdminCategoryUI
+    [Thá»‘ng kÃª & BÃ¡o cÃ¡o Doanh thu/Ca khÃ¡m] as AdminReportUI
+  }
+}
+
+' 2. SECURITY LAYER
+package "2. SECURITY LAYER (Báº£o máº­t & PhÃ¢n quyá»n)" #FFF3E0 {
+  [JwtTokenFilter (XÃ¡c thá»±c Token)] as JWTFilter
+  [Role-Based Authorization (PATIENT / DOCTOR / ADMIN)] as RoleGuard
+  [Input Validation (@Valid DTO)] as Validator
+}
+
+' 3. CONTROLLER LAYER
+package "3. CONTROLLER LAYER (RESTful Endpoints)" #F3E5F5 {
+  [AuthController\n/api/v1/auth] as AuthCtrl
+  [PatientController\n/api/v1/patients] as PatientCtrl
+  [DoctorController\n/api/v1/doctors] as DoctorCtrl
+  [BookingController\n/api/v1/appointments] as BookingCtrl
+  [AdminController\n/api/v1/admin] as AdminCtrl
+}
+
+' 4. SERVICE LAYER
+package "4. SERVICE LAYER (Nghiá»‡p vá»¥ cá»‘t lÃµi & Tá»‘i Æ°u)" #E8F5E9 {
+  [AuthService\n(ÄÄƒng kÃ½, Hash Password, Táº¡o JWT)] as AuthService
+  [PatientService\n(Quáº£n lÃ½ há»“ sÆ¡, Bá»‡nh Ã¡n)] as PatientService
+  [DoctorScheduleService\n(Táº¡o/Báº­t/Táº¯t Slot khÃ¡m)] as ScheduleService
+
+  package "Booking Processing Engine" #C8E6C9 {
+    [BookingServiceImpl\n(Xá»­ lÃ½ Äáº·t/Há»§y lá»‹ch, KhÃ³a tranh cháº¥p)] as BookingService
+    [Locking Mechanism\n(Pessimistic Lock: SELECT FOR UPDATE)] as LockEngine
+  }
+
+  [AdminManagementService\n(PhÃª duyá»‡t BÃ¡c sÄ©, CRUD, BÃ¡o cÃ¡o)] as AdminService
+
+  ' Advanced Async & Cache Services
+  [Redis Cache Service\n(Cache danh sÃ¡ch BÃ¡c sÄ© & Slot ráº£nh)] as CacheService
+  [Async Email Notification Service\n(Gá»­i mail xÃ¡c nháº­n Ä‘áº·t lá»‹ch & Nháº¯c lá»‹ch)] as EmailService
+}
+
+' 5. REPOSITORY & DATA LAYER
+package "5. REPOSITORY & DATA LAYER (LÆ°u trá»¯)" #EFEBE9 {
+  [Spring Data JPA Repositories] as Repositories
+  database "PostgreSQL / MySQL\n(Chá»©a Users, Schedules, Appointments...)" as MainDB
+  database "Redis Memory Database\n(Bá»™ nhá»› Ä‘á»‡m Caching)" as RedisDB
+  queue "Message Queue / Async Task\n(Xá»­ lÃ½ gá»­i Email báº¥t Ä‘á»“ng bá»™)" as EmailQueue
+}
+
+' Káº¾T Ná»I LUá»’NG Dá»® LIá»†U (DATA FLOWS)
+
+' Client -> Security
+AuthUI --> JWTFilter
+ProfileUI --> JWTFilter
+SearchDocUI --> JWTFilter
+BookingUI --> JWTFilter
+CancelUI --> JWTFilter
+
+DoctorScheduleUI --> JWTFilter
+DoctorApptUI --> JWTFilter
+DoctorNoteUI --> JWTFilter
+
+AdminUserUI --> JWTFilter
+AdminCategoryUI --> JWTFilter
+AdminReportUI --> JWTFilter
+
+' Security -> Controllers
+JWTFilter --> RoleGuard
+RoleGuard --> Validator
+
+Validator --> AuthCtrl
+Validator --> PatientCtrl
+Validator --> DoctorCtrl
+Validator --> BookingCtrl
+Validator --> AdminCtrl
+
+' Controllers -> Services
+AuthCtrl --> AuthService
+PatientCtrl --> PatientService
+DoctorCtrl --> ScheduleService
+DoctorCtrl --> BookingService
+BookingCtrl --> BookingService
+AdminCtrl --> AdminService
+
+' Core Business Logic & Advanced Services
+BookingService --> LockEngine
+SearchDocUI ..> CacheService : "Äá»c cache BÃ¡c sÄ©/Lá»‹ch ráº£nh"
+CacheService --> RedisDB
+
+BookingService --> EmailService : "Trigger sá»± kiá»‡n gá»­i Mail"
+EmailService --> EmailQueue : "ÄÆ°a Task gá»­i Mail vÃ o hÃ ng Ä‘á»£i Async"
+
+' Services -> Repositories & DB
+AuthService --> Repositories
+PatientService --> Repositories
+ScheduleService --> Repositories
+BookingService --> Repositories
+AdminService --> Repositories
+
+Repositories --> MainDB
+
+@enduml

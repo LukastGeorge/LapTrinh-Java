@@ -1,0 +1,81 @@
+﻿@startuml
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle uml2
+skinparam sequenceMessageAlign center
+skinparam roundcorner 10
+
+title SÆ  Äá»’ LUá»’NG TÆ¯Æ NG TÃC NGÆ¯á»œI DÃ™NG & HOáº T Äá»˜NG Há»† THá»NG (SYSTEM & USER FLOW)
+
+actor "Bá»‡nh nhÃ¢n / BÃ¡c sÄ© / Admin" as User #0D47A1
+participant "Single Page App\n(Frontend)" as SPA #1976D2
+participant "Spring Security\n(JWT Filter)" as Sec #F57C00
+participant "REST Controller\n(Validation)" as Ctrl #7B1FA2
+participant "Service Layer\n(Business Logic)" as Service #388E3C
+participant "Redis Cache" as Redis #D32F2F
+database "Database\n(Pessimistic Lock)" as DB #5D4037
+participant "External Services\n(Payment / Email Queue)" as Ext #616161
+
+== LUá»’NG 1: XÃC THá»°C & TRA Cá»¨U Lá»ŠCH Ráº¢NH (ÄÃ“C CACHE) ==
+
+User -> SPA : 1. ÄÄƒng nháº­p / Chá»n tÃ¬m lá»‹ch khÃ¡m
+SPA -> Sec : 2. Gá»­i Request + JWT Token
+Sec -> Sec : 3. Validate Token & Kiá»ƒm tra Role
+Sec -> Ctrl : 4. Chuyá»ƒn Request há»£p lá»‡
+Ctrl -> Ctrl : 5. Kiá»ƒm tra dá»¯ liá»‡u Ä‘áº§u vÃ o (@Valid DTO)
+Ctrl -> Service : 6. Gá»i hÃ m láº¥y danh sÃ¡ch Lá»‹ch khÃ¡m
+
+Service -> Redis : 7. Kiá»ƒm tra Cache Lá»‹ch ráº£nh/BÃ¡c sÄ©
+alt Cache Hit (CÃ³ sáºµn trong Redis)
+    Redis --> Service : Tráº£ vá» dá»¯ liá»‡u Cache
+else Cache Miss (ChÆ°a cÃ³ trong Redis)
+    Service -> DB : Truy váº¥n CSDL
+    DB --> Service : Tráº£ vá» Danh sÃ¡ch tá»« DB
+    Service -> Redis : LuÃ¢n chuyá»ƒn & LÆ°u vÃ o Cache
+end
+
+Service --> Ctrl : 8. Tráº£ vá» DTO
+Ctrl --> SPA : 9. Tráº£ JSON Chuáº©n (ApiResponse)
+SPA --> User : 10. Hiá»ƒn thá»‹ danh sÃ¡ch khung giá» khÃ¡m
+
+== LUá»’NG 2: Äáº¶T Lá»ŠCH KHÃM & Xá»¬ LÃ TRANH CHáº¤P (PESSIMISTIC LOCKING) ==
+
+User -> SPA : 11. Báº¥m "Äáº·t lá»‹ch" (Chá»n Schedule ID + Triá»‡u chá»©ng)
+SPA -> Sec : 12. Gá»­i POST /api/v1/appointments
+Sec -> Ctrl : 13. XÃ¡c thá»±c Role PATIENT thÃ nh cÃ´ng
+Ctrl -> Service : 14. Gá»i createAppointment() (@Transactional)
+
+group Xá»­ lÃ½ an toÃ n giao dá»‹ch (Concurrency Control)
+    Service -> DB : 15. SELECT ... FOR UPDATE (KhÃ³a dÃ²ng Schedule)
+    note over DB : KhÃ³a khung giá» nÃ y láº¡i.\nRequest trÃ¹ng láº·p khÃ¡c pháº£i chá»!
+
+    alt Slot Ä‘Ã£ bá»‹ ngÆ°á»i khÃ¡c Ä‘áº·t (is_available == false)
+        DB --> Service : Lá»‹ch khÃ´ng kháº£ dá»¥ng
+        Service --> Ctrl : NÃ©m AppException("Lá»‹ch Ä‘Ã£ Ä‘Æ°á»£c Ä‘áº·t")
+        Ctrl --> SPA : Tráº£ vá» JSON lá»—i 400 (Global Exception Handler)
+        SPA --> User : ThÃ´ng bÃ¡o: "Khung giá» vá»«a cÃ³ ngÆ°á»i chá»n!"
+    else Slot cÃ²n trá»‘ng (is_available == true)
+        Service -> DB : 16. Update Schedule (is_available = false)\n& INSERT Appointment má»›i
+        DB --> Service : XÃ¡c nháº­n lÆ°u DB thÃ nh cÃ´ng
+    end
+end
+
+== LUá»’NG 3: THANH TOÃN TRá»°C TUYáº¾N & THÃ”NG BÃO Báº¤T Äá»’NG Bá»˜ (ASYNC) ==
+
+opt Náº¿u cáº§n thanh toÃ¡n trÆ°á»›c
+    Service -> Ext : 17. Táº¡o URL Thanh toÃ¡n MoMo / VNPay
+    Ext --> SPA : Tráº£ vá» Link chuyá»ƒn hÆ°á»›ng
+    User -> Ext : 18. Thanh toÃ¡n trÃªn App NgÃ¢n hÃ ng / VÃ­
+    Ext -> Ctrl : 19. Webhook (IPN) XÃ¡c nháº­n Ä‘Ã£ nháº­n tiá»n
+    Ctrl -> Service : 20. Cáº­p nháº­t tráº¡ng thÃ¡i Appointment = CONFIRMED
+end
+
+Service -> Redis : 21. XÃ³a / Invalidate Cache khung giá» cÅ©
+Service -> Ext : 22. Äáº©y Task gá»­i Email vÃ o HÃ ng Ä‘á»£i (Async Queue)
+note right of Ext : Tiáº¿n trÃ¬nh cháº¡y ngáº§m gá»­i Mail,\nAPI tráº£ vá» ngay khÃ´ng pháº£i chá».
+
+Service --> Ctrl : 23. Tráº£ vá» BookingResponse DTO
+Ctrl --> SPA : 24. Tráº£ JSON ThÃ nh cÃ´ng 200 OK
+SPA --> User : 25. Hiá»ƒn thá»‹: "Äáº·t lá»‹ch thÃ nh cÃ´ng! Kiá»ƒm tra Email"
+Ext --> User : 26. Email SMTP gá»­i ThÆ° xÃ¡c nháº­n + MÃ£ QR Ä‘áº·t chá»—
+
+@enduml
