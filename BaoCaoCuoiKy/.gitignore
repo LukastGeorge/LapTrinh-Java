@@ -13,3 +13,4 @@ logs/
 *.zip
 .DS_Store
 Thumbs.db
+.env.demo

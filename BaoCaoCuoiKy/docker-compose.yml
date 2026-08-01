@@ -1,4 +1,4 @@
-services:
+﻿services:
   postgres:
     image: postgres:16-alpine
     container_name: clinic-postgres
@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-clinic_management}
       POSTGRES_USER: ${POSTGRES_USER:-clinic_app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -27,7 +27,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-clinic_management}
       DB_USERNAME: ${POSTGRES_USER:-clinic_app}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:is required}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "8080:8080"
     depends_on:
